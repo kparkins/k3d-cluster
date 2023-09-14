@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector
+  labels:
+    app: vector
+  namespace: vector
+data:
+  vector.yaml: |
+    data_dir: /vector-data-dir
+    sources:
+      k8s_logs:
+        type: kubernetes_logs
+    transforms:
+      k8s_transform:
+        type: remap
+        inputs:
+        - k8s_logs
+        source: |
+          e = {}
+          e.forwarder = "vector"
+          e.message = .message
+          e.pod = .kubernetes.pod_name
+          e.node = .kubernetes.pod_node_name
+          e.namespace = .kubernetes.pod_namespace
+          e.app = get!(., ["kubernetes", "pod_labels", "app.kubernetes.io/name"])
+          . = e
+    sinks:
+      loki_sink:
+        type: loki
+        inputs:
+          - k8s_transform
+        endpoint: 'http://loki.loki.svc.cluster.local:3100'
+        out_of_order_action: accept
+        encoding:
+          codec: json
+        labels:
+          forwarder: "{{ .forwarder }}" 
+          node: "{{ .node }}"
+          namespace: "{{ .namespace }}"
+          pod: "{{ .pod }}"
+          app: "{{ .app }}"
+

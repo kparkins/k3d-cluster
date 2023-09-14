@@ -1,0 +1,12 @@
+---
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: k3sp 
+servers: 1
+agents: 2
+image: docker.io/rancher/k3s:v1.27.4-k3s1
+kubeAPI: 
+  host: "myhost.my.domain" # important for the `server` setting in the kubeconfig
+  hostIP: "127.0.0.1" # where the Kubernetes API will be listening on
+  hostPort: "6445" # whe

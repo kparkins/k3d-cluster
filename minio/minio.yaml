@@ -1,0 +1,81 @@
+# Deploys a new Namespace for the MinIO Pod
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio # Change this value if you want a different namespace name
+  labels:
+    name: minio # Change this value to match metadata.name
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: minio
+spec:
+  accessModes:
+    - ReadWriteOnce  # Update based on your needs
+  storageClassName: local-path 
+  resources:
+    requests:
+      storage: 5Gi  # Update based on your needs
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: minio
+  name: minio
+  namespace: minio 
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: minio
+      name: minio
+      namespace: minio
+    spec:
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:latest
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server /data --console-address :9001
+        env:
+        - name: MINIO_REGION
+          value: "us-east-1"
+        volumeMounts:
+        - mountPath: /data
+          name: storagevolume # Corresponds to the `spec.volumes` Persistent Volume
+      nodeSelector:
+        kubernetes.io/hostname: k3d-k3sp-server-0 # Specify a node label associated to the Worker Node on which you want to deploy the pod.
+      volumes:
+      - name: storagevolume 
+        persistentVolumeClaim:
+          claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-svc
+  namespace: minio
+spec:
+  type: ClusterIP
+  selector:
+    app: minio
+  ports:
+  - name: server
+    protocol: TCP
+    port: 9000
+    targetPort: 9000
+  - name: console
+    protocol: TCP
+    port: 9001
+    targetPort: 9001

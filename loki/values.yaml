@@ -1,0 +1,19 @@
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 3
+  storage:
+    bucketNames:
+      chunks: chunks
+      ruler: ruler
+      admin: admin
+    type: 's3'
+    s3:
+      endpoint: http://minio-svc.minio.svc.cluster.local:9000 
+      region: us-east-1
+      secretAccessKey: minioadmin 
+      accessKeyId: minioadmin
+      s3ForcePathStyle: true
+      insecure: false 
+singleBinary:
+  replicas: 3
