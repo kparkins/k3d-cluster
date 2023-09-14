@@ -7,61 +7,6 @@ metadata:
     name: minio # Change this value to match metadata.name
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-pvc
-  namespace: minio
-spec:
-  accessModes:
-    - ReadWriteOnce  # Update based on your needs
-  storageClassName: local-path 
-  resources:
-    requests:
-      storage: 5Gi  # Update based on your needs
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: minio
-  name: minio
-  namespace: minio 
-spec:
-  selector:
-    matchLabels:
-      app: minio
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: minio
-      name: minio
-      namespace: minio
-    spec:
-      containers:
-      - name: minio
-        image: quay.io/minio/minio:latest
-        command:
-        - /bin/bash
-        - -c
-        args: 
-        - minio server /data --console-address :9001
-        env:
-        - name: MINIO_REGION
-          value: "us-east-1"
-        volumeMounts:
-        - mountPath: /data
-          name: storagevolume # Corresponds to the `spec.volumes` Persistent Volume
-      nodeSelector:
-        kubernetes.io/hostname: k3d-k3sp-server-0 # Specify a node label associated to the Worker Node on which you want to deploy the pod.
-      volumes:
-      - name: storagevolume 
-        persistentVolumeClaim:
-          claimName: minio-pvc
----
-apiVersion: v1
 kind: Service
 metadata:
   name: minio-svc
@@ -79,3 +24,77 @@ spec:
     protocol: TCP
     port: 9001
     targetPort: 9001
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: minio-headless
+  namespace: minio
+  labels:
+    app: minio
+spec:
+  selector:
+    app: minio
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: http
+      port: 9000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: minio
+  labels:
+    app: minio
+spec:
+  serviceName: "minio-headless"
+  replicas: 4                   # Creates 4 MinIO servers
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:latest
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server --console-address :9001 http://minio-{0...3}.minio-headless.minio.svc.cluster.local/data
+        env:
+        - name: MINIO_REGION
+          value: "us-east-1"
+        volumeMounts:
+        - mountPath: /data
+          name: minio-data # Corresponds to the `spec.volumes` Persistent Volume
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /minio/health/live
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 10
+        ports:
+        - containerPort: 9000
+          name: http
+          protocol: TCP
+  volumeClaimTemplates:
+  - metadata:
+      name: minio-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi        
+      storageClassName: "local-path" 
