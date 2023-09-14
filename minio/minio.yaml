@@ -67,13 +67,19 @@ spec:
         - /bin/bash
         - -c
         args: 
-        - minio server --console-address :9001 http://minio-{0...3}.minio-headless.minio.svc.cluster.local/data
+        - minio server --console-address :9001 http://minio-{0...3}.minio-headless.minio.svc.cluster.local/data{0...3}
         env:
         - name: MINIO_REGION
           value: "us-east-1"
         volumeMounts:
-        - mountPath: /data
-          name: minio-data # Corresponds to the `spec.volumes` Persistent Volume
+        - mountPath: /data0
+          name: minio-data0 # Corresponds to the `spec.volumes` Persistent Volume
+        - mountPath: /data1
+          name: minio-data1 # Corresponds to the `spec.volumes` Persistent Volume
+        - mountPath: /data2
+          name: minio-data2 # Corresponds to the `spec.volumes` Persistent Volume
+        - mountPath: /data3
+          name: minio-data3 # Corresponds to the `spec.volumes` Persistent Volume
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -90,7 +96,34 @@ spec:
           protocol: TCP
   volumeClaimTemplates:
   - metadata:
-      name: minio-data
+      name: minio-data0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi        
+      storageClassName: "local-path" 
+  - metadata:
+      name: minio-data1
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi        
+      storageClassName: "local-path" 
+  - metadata:
+      name: minio-data2
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi        
+      storageClassName: "local-path" 
+  - metadata:
+      name: minio-data3
     spec:
       accessModes:
         - ReadWriteOnce
