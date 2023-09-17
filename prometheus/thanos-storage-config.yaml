@@ -1,0 +1,8 @@
+type: S3
+config:
+  bucket: thanos-storage
+  endpoint: minio-svc.minio.svc.cluster.local:9000
+  region: us-east-1
+  access_key: minioadmin
+  insecure: false 
+  secret_key: minioadmin

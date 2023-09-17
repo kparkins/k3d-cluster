@@ -71,15 +71,21 @@ spec:
         env:
         - name: MINIO_REGION
           value: "us-east-1"
+        - name: MINIO_PROMETHEUS_AUTH_TYPE
+          value: "public"
+        - name: MINIO_PROMETHEUS_URL
+          value: "http://prometheus-server.monitoring.svc.cluster.local:80"
+        - name: MINIO_PROMETHEUS_JOB_ID
+          value: minio-job
         volumeMounts:
         - mountPath: /data0
-          name: minio-data0 # Corresponds to the `spec.volumes` Persistent Volume
+          name: minio-data0 
         - mountPath: /data1
-          name: minio-data1 # Corresponds to the `spec.volumes` Persistent Volume
+          name: minio-data1 
         - mountPath: /data2
-          name: minio-data2 # Corresponds to the `spec.volumes` Persistent Volume
+          name: minio-data2 
         - mountPath: /data3
-          name: minio-data3 # Corresponds to the `spec.volumes` Persistent Volume
+          name: minio-data3 
         livenessProbe:
           failureThreshold: 3
           httpGet:
